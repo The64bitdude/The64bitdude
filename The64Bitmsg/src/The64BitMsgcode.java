@@ -29,7 +29,7 @@ public class The64BitMsgcode extends ListenerAdapter
         // We only need 2 intents in this bot. We only respond to messages in guilds and private channels.
         // All other events will be disabled.
     	
-    	String Dtoken = "OTIyMzYyNDg0MjQzOTgwMzI4.YcAXAA.I53PxnqkFTit6Ro64xlKCbRa1Hg";
+    	String Dtoken = "your token";
     	auc = new AuthorizationConfig(Dtoken);
     	JDABuilder jdb = JDABuilder.createLight(Dtoken, GatewayIntent.GUILD_MESSAGES, GatewayIntent.DIRECT_MESSAGES,GatewayIntent.GUILD_VOICE_STATES);
     	jdb.addEventListeners(new The64BitMsgcode())
