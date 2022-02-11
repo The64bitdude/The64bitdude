@@ -57,6 +57,57 @@ public class MultiJOptionPane extends JFrame implements ActionListener,KeyListen
         e.dispose();
 		return out;
 	}
+	public static Object[] showInputAndButtonOptions(int amount,String[] names,int bamount,String[] bnames) {
+		MultiJOptionPane e = new MultiJOptionPane();
+		e.y *= amount;
+		e.setSize(e.x, e.y);
+		e.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		e.add(e.pnl);
+		e.setVisible(true);
+		String[] out = new String[amount];
+		
+		for(int i =0;i<amount;i++) {
+			if(i<names.length) {
+			e.pnl.add(new JLabel(names[i]));
+			}
+			e.txt.add(new JTextField(28));
+			e.txt.get(i).addKeyListener(e);
+			e.pnl.add(e.txt.get(i));
+			e.setVisible(true);
+		}
+        int bout = 0;
+		
+		for(int i =0;i<amount;i++) {
+			if(i<names.length) {
+				e.bts.add(new JButton(names[i]));
+			}else {
+				e.bts.add(new JButton());
+			}
+			e.pnl.add(e.bts.get(i));
+			e.bts.get(i).addActionListener(e);
+			e.setVisible(true);
+		}
+		e.pnl.add(e.btn);
+		 e.btn.addActionListener(e);
+		 e.setVisible(true);
+       while(e.getActivated() == false) {
+       for(int i =0;i<amount;i++) {
+       	out[i] = e.txt.get(i).getText();
+       }
+       }
+       e.activated = false;
+       while(e.getActivated() == false) {
+        	  bout = e.getEvent();
+        	  System.out.flush();
+        	 if(bout != -1) {
+        		 e.activated = true;
+        		}
+        	
+        }
+       
+        e.dispose();
+		return new Object[]{out,bout};
+	}
 	public static int showButtonOptions(int amount,String[] names) {
 		MultiJOptionPane e = new MultiJOptionPane();
 		e.y *= amount;

@@ -3,6 +3,7 @@ package Main;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -84,6 +85,20 @@ public class Maine extends JFrame implements ActionListener,KeyListener{
 		        }
 		    }
 		});
+		NPicp.setDropTarget(new DropTarget() {
+		    public synchronized void drop(DropTargetDropEvent evt) {
+		        try {
+		            evt.acceptDrop(DnDConstants.ACTION_COPY);
+		            List<File> droppedFiles = (List<File>)
+		                evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+		            for (File file : droppedFiles) {
+		                NPicp.setText(file.getPath());
+		            }
+		        } catch (Exception ex) {
+		            ex.printStackTrace();
+		        }
+		    }
+		});
 		while(true) {
 			try {
 			String pass = (String) dis.readObject();
@@ -97,7 +112,7 @@ public class Maine extends JFrame implements ActionListener,KeyListener{
 		File file = new File(filename);
 		if(isImage(file)) {
 		Image img = ImageIO.read(file);
-		JImage test = new JImage(img);
+		JImage test = new JImage(img,filename);
 		}
 		}else {
 		txa.setText(txa.getText() +pass + "\n");
@@ -164,15 +179,17 @@ public class Maine extends JFrame implements ActionListener,KeyListener{
 		dos.writeObject(bitar);
 	}
 	public void Nimg() throws IOException {
-		URL adress = new URL(Picp.getText());
-		File file = new File(adress.getFile());
-		byte[] bitar = new byte[(int) file.length()];
-		FileInputStream fis = new FileInputStream(file);
-		BufferedInputStream bis = new BufferedInputStream(fis);
-		bis.read(bitar,0,bitar.length);
-		dos.writeObject("FileGoingThrough1515%34189%");
+		String FileName = Picp.getText();
+		File file = new File(FileName);
+		String out = "";
+		Scanner fis = new Scanner(FileName);
+		while(fis.hasNextLine()){
+			out += fis.nextLine() + "\n";
+		}
+		fis.close();
+		dos.writeObject("TXTFileGoingThrough1515%34189%");
 		dos.writeObject(file.getName());
-		dos.writeObject(bitar);
+		dos.writeObject(out);
 	}
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == btn) {
@@ -193,7 +210,7 @@ public class Maine extends JFrame implements ActionListener,KeyListener{
 		}
 		if(e.getSource() == Ntn) {
 			try {
-				img();
+				Nimg();
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();

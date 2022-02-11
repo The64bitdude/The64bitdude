@@ -1,32 +1,26 @@
-// Author the64bitdude made in jan 9 2022 
+//Author the64bitdude made in jan 9 2022 
 package multiconnectiontest;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 
 import Main.ToLine;
 import client.JImage;
+import client.MultiDataStream;
 import client.MultiJOptionPane;
+import client.client;
+import client.openDesktopFile;
 
 import java.awt.Desktop;
 import java.awt.Image;
@@ -42,20 +36,23 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
-public class MainServer extends JFrame implements ActionListener,KeyListener,ListSelectionListener{
+public class MainServer extends JFrame implements ActionListener,KeyListener{
 	public JPanel pnl = new JPanel();
 	public TextArea txa = new TextArea();
 	public TextField txp = new TextField(28);
 	public JButton btn = new JButton("enter");
 	public JButton itn = new JButton("image");
+	public JButton Ntn = new JButton("net image");
 	public String username = "";
 	public TextField Picp = new TextField(28);
-	public ObjectOutputStream dos;
-	public ObjectInputStream dis;
-	public boolean OoF = false;
+	public TextField NPicp = new TextField(28);
+	public static int port = 0;
+	public String ip;
 	public String Tusername;
-	public MainServer(String ips,int ports,String name) throws IOException, ClassNotFoundException {
-		super("chatClient");
+	public MainServer(String userna,String ipe,int porte) throws IOException, ClassNotFoundException {
+		
+		super("chat " +Inet4Address.getLocalHost().getHostAddress());
+		System.setProperty("java.net.preferIPv4Stack", "true");
 		setSize(500,500);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		add(pnl);
@@ -64,14 +61,39 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 		pnl.add(btn);
 		pnl.add(Picp);
 		pnl.add(itn);
+		pnl.add(NPicp);
+		pnl.add(Ntn);
+		setVisible(true);
+		String name;
+		Tusername = userna;
+		if(porte == 0) {
+		if(MultiJOptionPane.showButtonOptions(2,new String[] {"use your ip as host","pick host ip"})== 0) {
+		String[] selections = MultiJOptionPane.showInputOptions(2,new String[]{"username","port"});
+		name = selections[0];
+		ip = Inet4Address.getLocalHost().getHostAddress();
+		int Port = (int)ToLine.SToDouble(selections[1]);
+		port = Port;
+		}else {
+			String[] selections = MultiJOptionPane.showInputOptions(3,new String[]{"username","ip","port"});
+			name = selections[0];
+			ip = selections[1];
+			int Port = (int)ToLine.SToDouble(selections[2]);
+			port = Port;
+			
+		}
+		}else {
+			port = porte;
+			ip = ipe;
+			name = JOptionPane.showInputDialog("whats your username");
+		}
+		txp.setText("your host ip is " +ip + " : and your port is : "+port);
+		setTitle( name + " : " +ip + " : "+ port);
 		btn.addActionListener(this);
 		itn.addActionListener(this);
 		txp.addKeyListener(this);
-		ip = ips;
-		port = ports;
+		Ntn.addActionListener(this);
 		username = name;
-		connect(ip,port);
-		setVisible(true);
+		connect(port);
 		Picp.setDropTarget(new DropTarget() {
 		    public synchronized void drop(DropTargetDropEvent evt) {
 		        try {
@@ -86,28 +108,47 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 		        }
 		    }
 		});
-		
-		
-		
+		NPicp.setDropTarget(new DropTarget() {
+		    public synchronized void drop(DropTargetDropEvent evt) {
+		        try {
+		            evt.acceptDrop(DnDConstants.ACTION_COPY);
+		            List<File> droppedFiles = (List<File>)
+		                evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+		            for (File file : droppedFiles) {
+		                NPicp.setText(file.getPath());
+		            }
+		        } catch (Exception ex) {
+		            ex.printStackTrace();
+		        }
+		    }
+		});
 		while(true) {
 			try {
-			String pass = (String) dis.readObject();
+			String pass = receiveString();
 		if(pass.equals("FileGoingThrough1515%34189%")) {
-			String filename = (String) dis.readObject();
+			String filename = receiveString();
 			txa.setText(txa.getText() +"file " +filename+" recived" + "\n");
-		byte[] fileData = (byte[]) dis.readObject();
+		byte[] fileData = receiveByte();
 		FileOutputStream fos = new FileOutputStream(filename);
 		BufferedOutputStream bos = new BufferedOutputStream(fos);
 		bos.write(fileData, 0, fileData.length);
 		File file = new File(filename);
 		if(isImage(file)) {
 		Image img = ImageIO.read(file);
-		JImage test = new JImage(img);
+		JImage test = new JImage(img,filename);
+		}else if(pass.equals("TXTFileGoingThrough1515%34189%")) {
+			String filenam = receiveString();
+			try {
+			FileWriter fw = new FileWriter(filenam);
+			fw.write(receiveString());
+			fw.close();
+			}catch(FileNotFoundException e) {
+
+			}
 		}
 		}else {
-			Tusername = pass.substring(0,pass.indexOf(":")-1);
-			therest(ip,port);
 		txa.setText(txa.getText() +pass + "\n");
+		client.therest(ip,port,Tusername,"servers.dat");
 		}
 		dcount = 0;
 		}catch(EOFException e) {
@@ -115,142 +156,88 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 			txa.setText(txa.getText() +"disconnected" + "\n");
 			
 			}
-			dos.close();
-			dis.close();
 			s.close();
-			connect(ip,port);
+			connect(port);
 			dcount++;
 		}
 		}
 	}
-	String ip;
-	int port;
-	public void therest(String ip ,int port) throws IOException, ClassNotFoundException,NullPointerException {
-		FileWriter fileriter = new FileWriter("old_connections.dat");
-		String filedata = readFile(new File("old_connections.dat"));
-		HashMap<String,Integer> olds = getPort(filedata);
-		List<String> outnames = getoutnames(filedata);
-		if(!(outnames.contains(ip))){
-		fileriter.write(filedata+ip +":" + port+":"+Tusername+":");
-		}else {
-			if(olds.get(ip) == port) {
-		fileriter.write(filedata);
-			}else {
-				fileriter.write(filedata.substring(0,filedata.indexOf(ip)+ip.length())+":"+port+":"+Tusername+filedata.substring(filedata.indexOf(port)+(port+"").length()).substring(filedata.substring(filedata.indexOf(port)+(port+"").length()).indexOf(":")));
-			}
-		}
-		fileriter.close();
-	}
-	public static String readFile(File file) throws FileNotFoundException {
-		Scanner in = new Scanner(file);
-		String out = "";
-		while(in.hasNextLine()) {
-			out += in.nextLine();
-		}
-		in.close();
-
-		return out;
-		
-	}
-	public static List<String> getoutnames(String in){
-			HashMap<String,Integer> out = new HashMap<String,Integer>();
-			List<String> outname = new ArrayList<String>();
-			while(in.indexOf(":") != -1) {
-				String firstkey = in.substring(0,in.indexOf(":"));
-	            outname.add(firstkey);
-				in = in.substring(in.indexOf(":")+1);
-				String secondkey = in.substring(0,in.indexOf(":"));
-				in = in.substring(in.indexOf(":")+1);
-				String thirdkey = in.substring(0,in.indexOf(":"));
-				in = in.substring(in.indexOf(":")+1);
-				out.put(firstkey,(int)ToLine.SToDouble(secondkey));
-			}
-			return outname;
-			
-		}
-	public static List<String> getNames(String in){
-		HashMap<String,String> out = new HashMap<String,String>();
-		List<String> outname = new ArrayList<String>();
-		while(in.indexOf(":") != -1) {
-			String firstkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			String secondkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			String thirdkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			outname.add(thirdkey);
-			out.put(firstkey,thirdkey);
-		}
-		return outname;
-		
-	}
-	public static HashMap<String,String> getHashNames(String in){
-		HashMap<String,String> out = new HashMap<String,String>();
-		List<String> outname = new ArrayList<String>();
-		while(in.indexOf(":") != -1) {
-			String firstkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			String secondkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			String thirdkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			outname.add(thirdkey);
-			out.put(thirdkey,firstkey);
-		}
-		return out;
-		
-	}
-	public static HashMap<String,Integer> getPort(String in){
-		HashMap<String,Integer> out = new HashMap<String,Integer>();
-		List<String> outname = new ArrayList<String>();
-		while(in.indexOf(":") != -1) {
-			String firstkey = in.substring(0,in.indexOf(":"));
-            outname.add(firstkey);
-			in = in.substring(in.indexOf(":")+1);
-			String secondkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			String thirdkey = in.substring(0,in.indexOf(":"));
-			in = in.substring(in.indexOf(":")+1);
-			out.put(firstkey,(int)ToLine.SToDouble(secondkey));
-		}
-		return out;
-		
-	}
-	public Socket s;
-	public void connect(String ip,int port) throws UnknownHostException, ClassNotFoundException {
-		try {
-		s = new Socket(ip,port);
+	int dcount = 0;
+	public MulticastSocket s;
+	InetAddress group;
+	public void connect(int port) throws UnknownHostException, IOException, ClassNotFoundException {
 		String u = username +" : has joined";
-		dos = new ObjectOutputStream(s.getOutputStream());
-		dis = new ObjectInputStream(s.getInputStream());
-		dos.writeObject(u);
-		txa.setText(txa.getText() + u + "\n");
-		String msga = (String) dis.readObject();
+		group = InetAddress.getByName("230"+ip.substring(ip.indexOf(".")));
+		 s = new MulticastSocket(port);
+		 s.joinGroup(group);
+		 // get their responses!
+		 // OK, I'm done talking - leave the group...
+		 // s.leaveGroup(group);
+	
+		 sendString(u);
+		String msga = receiveString();
 		txa.setText(txa.getText() + msga + "\n");
 		Picp.setText("");
-        }catch(IOException e) {
-			
+	}
+	public void sendString(String st) {
+		 DatagramPacket hi = new DatagramPacket(st.getBytes(), st.length(),group, port);
+		 try {
+			s.send(hi);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
-	int dcount = 0;
-		public boolean isImage(File file) {
-			String[] ext = new String[] {".jpeg",".jpg",".png",".gif",".bmp",".webmp"};
-			String filename = file.getName();
-			for(int i = 0;i<ext.length;i++) {
-				if(ext[i].equals(filename.substring(filename.length()-ext[i].length()))) {
-					return true;
-				}
-			}
-			return false;
-			
+	public void sendBytes(byte[] st) {
+		 DatagramPacket hi = new DatagramPacket(st, st.length,group, port);
+		 try {
+			s.send(hi);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+	}
+	public String receiveString() {
+		 byte[] buf = new byte[1000];
+		 DatagramPacket recv = new DatagramPacket(buf, buf.length);
+		 try {
+			s.receive(recv);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 return new String(recv.getData());
+	}
+	public byte[] receiveByte() {
+		 byte[] buf = new byte[1000];
+		 DatagramPacket recv = new DatagramPacket(buf, buf.length);
+		 try {
+			s.receive(recv);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 return recv.getData();
+	}
+	
+	public boolean isImage(File file) {
+		String[] ext = new String[] {".jpeg",".jpg",".png",".gif",".bmp",".webmp"};
+		String filename = file.getName();
+		for(int i = 0;i<ext.length;i++) {
+			if(ext[i].equals(filename.substring(filename.length()-ext[i].length()))) {
+				return true;
+			}
+		}
+		return false;
+		
+	}
 	public void msg() throws IOException {
 		String u = "";
 		u = txp.getText();
 		u = username +" : "+ u;
-		dos.writeObject(u);
-		txa.setText(txa.getText() + u + "\n");
+		sendString(u);
 		txp.setText("");
+		
 	}
 	public void img() throws IOException {
 		String FileName = Picp.getText();
@@ -259,9 +246,22 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 		FileInputStream fis = new FileInputStream(file);
 		BufferedInputStream bis = new BufferedInputStream(fis);
 		bis.read(bitar,0,bitar.length);
-		dos.writeObject("FileGoingThrough1515%34189%");
-		dos.writeObject(file.getName());
-		dos.writeObject(bitar);
+		sendString("FileGoingThrough1515%34189%");
+		sendString(file.getName());
+		sendBytes(bitar);
+	}
+	public void Nimg() throws IOException {
+		String FileName = Picp.getText();
+		File file = new File(FileName);
+		String out = "";
+		Scanner fis = new Scanner(FileName);
+		while(fis.hasNextLine()){
+			out += fis.nextLine() + "\n";
+		}
+		fis.close();
+		sendString("TXTFileGoingThrough1515%34189%");
+		sendString(file.getName());
+		sendString(out);
 	}
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == btn) {
@@ -280,7 +280,16 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 				e1.printStackTrace();
 			}
 		}
-	}
+		if(e.getSource() == Ntn) {
+			try {
+				Nimg();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		}
 		public void keyTyped(KeyEvent e) {
 			
 		}
@@ -297,7 +306,11 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 		public void keyReleased(KeyEvent e) {
 			
 		}
+		public void drop(DropTargetDropEvent evt) {
+			
+		}
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
+		System.setProperty("java.net.preferIPv4Stack", "true");
 		JFrame frm = new JFrame("name");
 		frm.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		String filedata;
@@ -305,37 +318,30 @@ public class MainServer extends JFrame implements ActionListener,KeyListener,Lis
 		String ips = "";
 		HashMap<String,Integer> olds;
 		try {
-			File pa = new File("old_connections.dat");
-			filedata = readFile(pa);
-			olds = getPort(filedata);
+			File pa = new File("servers.dat");
+			filedata = client.readFile(pa);
+			olds =  client.getPort(filedata);
 		}catch(FileNotFoundException awd) {
-			FileWriter filewrtier = new FileWriter("old_connections.dat");
+			FileWriter filewrtier = new FileWriter("servers.dat");
 			filewrtier.write(Inet4Address.getLocalHost().getHostAddress()+":"+2222 + ":"+"server:");
 			filewrtier.close();
-			File pa = new File("old_connections.dat");
-			filedata = readFile(pa);
-			olds = getPort(filedata);
+			File pa = new File("servers.dat");
+			filedata =  client.readFile(pa);
+			olds =  client.getPort(filedata);
 		}
 		String name = "";
 		if(JOptionPane.showConfirmDialog(frm,"do you wabt to pick from past connections?")!= 0) {
-		String[] selections = MultiJOptionPane.showInputOptions(3,new String[]{"username","ip","port"});
-		name = selections[0];
-		ips = selections[1];
-		ports = (int)ToLine.SToDouble(selections[2]);
+			name = JOptionPane.showInputDialog("whats the new servers name");
+			ports = 0;
 		}else {
-			name = JOptionPane.showInputDialog(frm,"username");
-		String out = (String) JOptionPane.showInputDialog(frm, "do it", "pick one", JOptionPane.PLAIN_MESSAGE, null, getNames(filedata).toArray(), getNames(filedata).toArray()[0]);
-		ips= getHashNames(filedata).get(out);
-		ports = olds.get(ips);
+			String out = (String) JOptionPane.showInputDialog(frm, "do it", "pick one", JOptionPane.PLAIN_MESSAGE, null, client.getNames(filedata).toArray(),  client.getNames(filedata).toArray()[0]);
+			name = out;
+			ips= client.getHashNames(filedata).get(out);
+			ports = olds.get(ips);
 		}
 		frm.setVisible(true);
 		frm.dispose();
-		MainServer e = new MainServer(ips,ports,name);
-		
+		MainServer e = new MainServer(name,ips,ports);
 	}
-	
-	public void valueChanged(ListSelectionEvent e) {
-	
-		
+
 	}
-}

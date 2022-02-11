@@ -99,22 +99,38 @@ public class client extends JFrame implements ActionListener,KeyListener,ListSel
 		File file = new File(filename);
 		if(isImage(file)) {
 		Image img = ImageIO.read(file);
-		JImage test = new JImage(img);
+		JImage test = new JImage(img,filename);
 		}
+		}else if(pass.equals("TXTFileGoingThrough1515%34189%")) {
+			String filename = (String) dis.readObject();
+			try {
+			FileWriter fw = new FileWriter(filename);
+			fw.write((String) dis.readObject());
+			fw.close();
+			}catch(FileNotFoundException e) {
+
+			}
+		
 		}else {
+			if(pass.indexOf(":")-1 > 0) {
 			Tusername = pass.substring(0,pass.indexOf(":")-1);
-			therest(ip,port);
+			}
+			therest(ip,port,Tusername,"old_connections.dat");
 		txa.setText(txa.getText() +pass + "\n");
 		}
 		dcount = 0;
-		}catch(EOFException e) {
+		}catch(EOFException |NullPointerException e) {
 			if(dcount < 1) {
 			txa.setText(txa.getText() +"disconnected" + "\n");
 			
 			}
+			try {
 			dos.close();
 			dis.close();
 			s.close();
+			}catch(NullPointerException eas) {
+				
+			}
 			connect(ip,port);
 			dcount++;
 		}
@@ -122,9 +138,9 @@ public class client extends JFrame implements ActionListener,KeyListener,ListSel
 	}
 	String ip;
 	int port;
-	public void therest(String ip ,int port) throws IOException, ClassNotFoundException,NullPointerException {
-		FileWriter fileriter = new FileWriter("old_connections.dat");
-		String filedata = readFile(new File("old_connections.dat"));
+	public static void therest(String ip ,int port,String Tusername,String filen) throws IOException, ClassNotFoundException,NullPointerException {
+		FileWriter fileriter = new FileWriter(filen);
+		String filedata = readFile(new File(filen));
 		HashMap<String,Integer> olds = getPort(filedata);
 		List<String> outnames = getoutnames(filedata);
 		if(!(outnames.contains(ip))){
