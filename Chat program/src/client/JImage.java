@@ -32,6 +32,7 @@ JPanel pnl = new JPanel();
 			if((img.getWidth(pnl) > screenSize.width)) {
 		img = img.getScaledInstance(screenSize.width,img.getHeight(pnl), 0);	
 			}
+			setSize(img.getWidth(pnl)+10,img.getHeight(pnl)+27);
 		}else {
 		setSize(img.getWidth(pnl)+10,img.getHeight(pnl)+27);
 		}
