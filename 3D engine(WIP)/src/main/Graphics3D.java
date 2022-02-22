@@ -74,7 +74,9 @@ g=G;
 		int by = bg[1];
 		
 		//lines
+		if(a.Z + C.Z > 0) {
 		g.fillPolygon(new int[]{ax,bx,bx,ax}, new int[]{ay,ay,by,by}, 4);
+		}
 	}
 	public void fillCube(Point p, int size) {
 		fillRectangle(p,new Point(p.X+size,p.Y+size,p.Z+size),false);
