@@ -45,6 +45,11 @@ public class Screen extends JPanel implements Runnable{
 	int cameraX = 0;
 	int cameraY = 0;
 	int cameraZ = 0;
+	double cameraH = 0;
+	double cameraV = 0;
+	int colorframeR = 255;
+	int colorframeG = 0;
+	int colorframeB = 0;
 	
 	public Screen() {
 		this.setPreferredSize(new Dimension(screenWidth,screenHeight));
@@ -52,6 +57,7 @@ public class Screen extends JPanel implements Runnable{
 		this.setDoubleBuffered(true);
 		this.setFocusable(true);
 		this.addKeyListener(keys);
+		this.addMouseMotionListener(keys);
 	}
 	public void startGameThread() {
 		gameThread = new Thread(this);
@@ -98,23 +104,49 @@ public class Screen extends JPanel implements Runnable{
 		keyPresses();
 	}
 	public void keyPresses() {
-		if(keys.forward == true) {
-			cameraZ+=5;
+		cameraV = keys.MouseX*180/screenWidth+90;
+		cameraH = keys.MouseY*180/screenHeight+90;
+		/*if(keys.lU) {
+			if(cameraH > -360) {
+			cameraH-=1;
+			}
 		}
-		if(keys.backward == true) {
-			cameraZ-=5;
+		if(keys.lD) {
+			if(cameraH < 360) {
+			cameraH+=1;
+			}
 		}
-		if(keys.up == true) {
+		if(keys.lR) {
+			if(cameraV > -360) {
+			cameraV-=1;
+			}
+		}
+		if(keys.lL) {
+			if(cameraV < 360) {
+			cameraV+=1;
+			}
+		}*/
+		if(keys.forward) {	
+			cameraZ-=(5*Math.cos((cameraV)*Math.PI/180));
+			cameraX-=(5*Math.sin((cameraV)*Math.PI/180));
+		}
+		if(keys.backward) {
+			cameraZ+=(5*Math.cos((cameraV)*Math.PI/180));
+			cameraX+=(5*Math.sin((cameraV)*Math.PI/180));
+		}
+		if(keys.up) {
 			cameraY+=5;
 		}
-		if(keys.down == true) {
+		if(keys.down) {
 			cameraY-=5;
 		}
-		if(keys.right == true) {
-			cameraX+=5;
+		if(keys.right) {
+			cameraZ+=(5*Math.sin((cameraV)*Math.PI/180));
+			cameraX-=(5*Math.cos((cameraV)*Math.PI/180));
 		}
-		if(keys.left == true) {
-			cameraX-=5;
+		if(keys.left) {
+			cameraZ-=(5*Math.sin((cameraV)*Math.PI/180));
+			cameraX+=(5*Math.cos((cameraV)*Math.PI/180));
 		}
 	}
 	
@@ -124,17 +156,35 @@ public class Screen extends JPanel implements Runnable{
 		super.paintComponent(g);
 		g.setColor(Color.WHITE);
 		g.drawString(currentFPS+"", 15, 15);
+		g.drawString(cameraV+"", 15, 30);
 		Graphics3D g3 = new Graphics3D(g);
+		g3.setSpeed(90);
 		g3.setScreenSize(screenWidth, screenHeight);
-	    g3.setCamera(new Camera(cameraX,cameraY,cameraZ));
+	    g3.setCamera(new Camera(cameraX,cameraY,cameraZ),cameraH,cameraV);
 	    g.setColor(Color.GREEN);
 	    g3.fillCube(new Point(-tileSize*15,tileSize*6,tileSize*7),tileSize*30);
-		g.setColor(Color.BLUE);
+	    g3.rainbow(new Point(-tileSize*2,-tileSize*6,tileSize*8),10);
+		g.setColor(new Color(colorframeR,colorframeG,colorframeB));
+		g3.fillSquare(new Point(colorframeR,colorframeG,colorframeB),100);
 	    g3.fillCube(new Point(-tileSize,-tileSize,tileSize*2),tileSize*2);
 	    g3.drawCube(new Point(tileSize,tileSize,tileSize*2),tileSize*2);
 	    g3.fillSquare(new Point(-tileSize,tileSize,tileSize*4),tileSize*2);
 	    g3.drawRectangle(new Point(tileSize,-tileSize,tileSize*2),tileSize*4,tileSize*2,tileSize*2);
-		g.dispose();
+	    if(colorframeR > 0) {
+	    	colorframeR--;
+	    	colorframeG++;
+	    }else if(colorframeG >= 0) {
+	    	colorframeG--;
+	    	colorframeB++;
+	    }
+	    if(colorframeB >= 255) {
+	    	
+	    	colorframeR = 255;
+	    			colorframeB = 0;
+	    			
+	    }
+	    g3.mtv();
+	    g.dispose();
 	}
 	
 }
